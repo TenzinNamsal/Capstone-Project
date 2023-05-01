@@ -6,6 +6,48 @@
 
 <%@page import= "java.sql.*"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+
+<%
+    String studentName = "";
+    String studentID = "";
+
+    // Check if the user has submitted the login form
+    if (request.getParameter("studentID") != null) {
+        studentID = request.getParameter("studentID");
+
+        try {
+            // Set up the database connection
+            String jdbcUrl = "jdbc:mysql://localhost:3306/zest";
+            String jdbcUsername = "root";
+            String jdbcPassword = "admin";
+
+            // Connect to the database
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection connection = DriverManager.getConnection(jdbcUrl, jdbcUsername, jdbcPassword);
+
+            // Prepare the SQL statement to retrieve the user credentials
+            String sql = "SELECT * FROM students WHERE studentID = " + studentID;
+
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            // Execute the query and check if the result set is not empty
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                studentName = resultSet.getString("studentUserName");
+            }
+
+            // Close the database connection and return the authentication result
+            resultSet.close();
+            statement.close();
+            connection.close();
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+%>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -34,9 +76,9 @@
                 border-radius: 15px;
                 box-shadow: 0 9px #999;
             }
-            .button:hover {
+/*            .button:hover {
                 background-color: green
-            }
+            }*/
             .button:active {
                 background-color: #3e8e41;
                 box-shadow: 0 5px #666;
@@ -107,7 +149,7 @@
                             <h4 class="w3-center">My Profile</h4>
                             <p class="w3-center"><img src="avatar3.png" class="w3-circle" style="height:106px;width:106px" alt="Avatar"></p>
                             <hr>
-                            <p><i class="fa fa-pencil fa-fw w3-margin-right w3-text-theme"></i> Software Student </p>
+                            <p><i class="fa fa-pencil fa-fw w3-margin-right w3-text-theme"></i> <%=studentName%> </p>
                             <p><i class="fa fa-home fa-fw w3-margin-right w3-text-theme"></i> Summit Academy OIC </p>
                             <p><i class="fa fa-birthday-cake fa-fw w3-margin-right w3-text-theme"></i> Today's Date </p>
 
@@ -118,13 +160,12 @@
                     <!-- Accordion -->
                     <div class="w3-card w3-round">
                         <div class="w3-white">
-                            <a href="TutorialSession.jsp" class="w3-button w3-block w3-theme-l1 w3-left-align">
-                                <i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i> Book a Session
+                            <a href="BookingSession.jsp?studentID=<%=studentID%>" class="w3-button w3-block w3-theme-l1 w3-left-align">
+                                <i class="fa fa-calendar-check-o fa-fw w3-margin-right"></i>Book a Session
                             </a>
-
-                            <a href="myAppointments.jsp" class="w3-button w3-block w3-theme-l1 w3-left-align">
+                            <a href="myAppointments.jsp?studentID=<%=studentID%>" class="w3-button w3-block w3-theme-l1 w3-left-align">
                                 <i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i> My Appointments
-                            </a>                            
+                            </a>                           
                         </div>
                     </div>
                 </div>
@@ -144,11 +185,11 @@
 
                                     <table width="100%">
                                         <tr>
-                                            <th>Tutor Name</th>
+                                            <th>Tutor </th>
                                             <th>Date</th>
                                             <th>Start Time</th>
                                             <th>End Time</th>
-                                            <th>Confirmation Number</th>
+                                            <th>Meeting Link</th>
                                         </tr>
 
                                         <!-- Database Code -->
@@ -159,7 +200,12 @@
                                                 Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/zest", "root", "admin");
 
 // Query the database for all available tutorial sessions
-                                                PreparedStatement stmt = con.prepareStatement("SELECT * FROM bookedSessions WHERE studentID = 1"); // TODO - enter logged in student's studentID 
+                                                PreparedStatement stmt = con.prepareStatement(""
+                                                        + "SELECT b.tutorName, b.Date, b.startTime, b.endTime, t.meetingLink "
+                                                        + "FROM zest.bookedsessions b "
+                                                        + "JOIN tutorialsessions t ON b.sessionID = t.sessionID "
+                                                       + "WHERE b.studentID = " + request.getParameter("studentID"));
+
                                                 ResultSet rs = stmt.executeQuery();
 
                                                 // Loop through the result set and display each session in a table row
@@ -168,7 +214,7 @@
                                                     String Date = rs.getString("Date");
                                                     String startTime = rs.getString("startTime");
                                                     String endTime = rs.getString("endTime");
-                                                    String confirmationNumber = rs.getString("confirmationNumber");
+                                                    String meetingLink = rs.getString("meetingLink");
                                         %>
 
                                         <tr>
@@ -176,7 +222,7 @@
                                             <td><%= Date%></td>
                                             <td><%= startTime%></td>
                                             <td><%= endTime%></td>
-                                            <td><%= confirmationNumber%></td>
+                                         <td  class=button><%= meetingLink%></button></td>
                                         </tr>
 
                                         <%
